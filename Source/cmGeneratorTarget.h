@@ -937,6 +937,8 @@ public:
 
   std::string GetFortranModuleDirectory(std::string const& working_dir) const;
   bool IsFortranBuildingInstrinsicModules() const;
+  /** Get the Swift module name, normalized for validity. */
+  std::string GetSwiftModuleName() const;
 
   bool IsLinkLookupScope(std::string const& n,
                          cmLocalGenerator const*& lg) const;

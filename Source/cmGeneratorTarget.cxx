@@ -6783,6 +6783,17 @@ bool cmGeneratorTarget::IsFortranBuildingInstrinsicModules() const
   return false;
 }
 
+std::string cmGeneratorTarget::GetSwiftModuleName() const
+{
+  if (cmValue swiftModuleName = this->GetProperty("Swift_MODULE_NAME")) {
+    return *swiftModuleName;
+  }
+
+  std::string moduleName = this->GetName();
+  std::replace(moduleName.begin(), moduleName.end(), '-', '_');
+  return moduleName;
+}
+
 std::string cmGeneratorTarget::CreateFortranModuleDirectory(
   std::string const& working_dir) const
 {

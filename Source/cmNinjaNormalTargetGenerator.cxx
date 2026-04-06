@@ -1089,18 +1089,11 @@ static std::string GetTargetPropertyOrDefault(cmGeneratorTarget const* target,
   return defaultValue;
 }
 
-/// Compute the swift module name for target
-static std::string GetSwiftModuleName(cmGeneratorTarget const* target)
-{
-  return GetTargetPropertyOrDefault(target, "Swift_MODULE_NAME",
-                                    target->GetName());
-}
-
 /// Compute the swift module path for the target
 /// The returned path will need to be converted to the generator path
 static std::string GetSwiftModulePath(cmGeneratorTarget const* target)
 {
-  std::string moduleName = GetSwiftModuleName(target);
+  std::string moduleName = target->GetSwiftModuleName();
   std::string moduleDirectory = GetTargetPropertyOrDefault(
     target, "Swift_MODULE_DIRECTORY",
     target->LocalGenerator->GetCurrentBinaryDirectory());
@@ -1221,7 +1214,7 @@ void cmNinjaNormalTargetGenerator::WriteLinkStatement(
       return targetNames.Base;
     }();
 
-    vars["SWIFT_MODULE_NAME"] = GetSwiftModuleName(gt);
+    vars["SWIFT_MODULE_NAME"] = gt->GetSwiftModuleName();
     vars["SWIFT_MODULE"] = this->GetLocalGenerator()->ConvertToOutputFormat(
       this->ConvertToNinjaPath(GetSwiftModulePath(gt)),
       cmOutputConverter::SHELL);
@@ -1551,10 +1544,11 @@ void cmNinjaNormalTargetGenerator::WriteLinkStatement(
     if (cmComputeLinkInformation* cli =
           this->GeneratorTarget->GetLinkInformation(config)) {
       for (auto const& dependency : cli->GetItems()) {
-        // Both the current target and the linked target must be swift targets
-        // in order for there to be a swiftmodule to depend on
+        // Only depend on swiftmodule from targets that actually compile Swift
+        // sources. A C/C++ target may have Swift as its linker language (due to
+        // project-level language propagation) without producing a swiftmodule.
         if (dependency.Target &&
-            dependency.Target->GetLinkerLanguage(config) == "Swift") {
+            dependency.Target->IsLanguageUsed("Swift", config)) {
           std::string swiftmodule =
             this->ConvertToNinjaPath(GetSwiftModulePath(dependency.Target));
           linkBuild.ImplicitDeps.emplace_back(swiftmodule);
